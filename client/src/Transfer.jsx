@@ -1,11 +1,19 @@
 import { useState } from "react";
 import server from "./server";
+import { sign } from "ethereum-cryptography/secp256k1";
+import { utf8ToBytes, toHex } from "ethereum-cryptography/utils";
+import { sha256 } from "ethereum-cryptography/sha256";
 
 function Transfer({ address, setBalance }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
 
   const setValue = (setter) => (evt) => setter(evt.target.value);
+
+  function signTransaction(privateKey, information) {
+    messageHash = sha256(utf8ToBytes(information));
+    return sign(privateKey, messageHash);
+  }
 
   async function transfer(evt) {
     evt.preventDefault();
