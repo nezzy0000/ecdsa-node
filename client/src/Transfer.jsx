@@ -1,30 +1,42 @@
 import { useState } from "react";
 import server from "./server";
-import { sign } from "ethereum-cryptography/secp256k1";
+
 import { utf8ToBytes, toHex } from "ethereum-cryptography/utils";
 import { sha256 } from "ethereum-cryptography/sha256";
+import { secp256k1 } from "ethereum-cryptography/secp256k1.js";
 
 function Transfer({ address, setBalance }) {
   const [sendAmount, setSendAmount] = useState("");
   const [recipient, setRecipient] = useState("");
+  const [privateKey, setPrivateKey] = useState("");
 
   const setValue = (setter) => (evt) => setter(evt.target.value);
 
-  function signTransaction(privateKey, information) {
-    messageHash = sha256(utf8ToBytes(information));
-    return sign(privateKey, messageHash);
+  function signTransaction(privateKey, messageHash) {
+    return secp256k1.sign(privateKey, messageHash);
   }
 
   async function transfer(evt) {
     evt.preventDefault();
 
+    const message = JSON.stringify({
+      sender: address,
+      senderPublicKey: toHex(secp256k1.getPublicKey(privateKey)),
+      recipient: recipient,
+      amount: parseInt(sendAmount),
+    });
+    const messageHash = sha256(utf8ToBytes(message));
+    const signature = signTransaction(privateKey, messageHash);
+
+    console.log(message, messageHash, signature);
+
     try {
       const {
         data: { balance },
       } = await server.post(`send`, {
-        sender: address,
-        amount: parseInt(sendAmount),
-        recipient,
+        message: message,
+        messageHash: messageHash,
+        signature: signature,
       });
       setBalance(balance);
     } catch (ex) {
@@ -48,9 +60,18 @@ function Transfer({ address, setBalance }) {
       <label>
         Recipient
         <input
-          placeholder="Type an address, for example: 0x2"
+          placeholder="Type an address"
           value={recipient}
           onChange={setValue(setRecipient)}
+        ></input>
+      </label>
+
+      <label>
+        Private Key
+        <input
+          placeholder="Type your private key"
+          value={privateKey}
+          onChange={setValue(setPrivateKey)}
         ></input>
       </label>
 

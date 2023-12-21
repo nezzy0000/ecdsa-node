@@ -16,9 +16,9 @@ function Wallet({ address, setAddress, balance, setBalance }) {
 
   return (
     <div className="container wallet">
-      <h1>Your Wallet</h1>
+      <h1>Wallet</h1>
       <label>
-        Wallet Address
+        Address
         <input placeholder="Type an address" value={address} onChange={onChange}></input>
       </label>
 

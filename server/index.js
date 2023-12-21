@@ -1,3 +1,7 @@
+const secp = require("ethereum-cryptography/secp256k1");
+const { toHex, utf8ToBytes } = require("ethereum-cryptography/utils");
+const { sha256 } = require("ethereum-cryptography/sha256");
+
 const express = require("express");
 const app = express();
 const cors = require("cors");
@@ -18,19 +22,51 @@ app.get("/balance/:address", (req, res) => {
   res.send({ balance });
 });
 
-app.post("/send", (req, res) => {
-  const { sender, recipient, amount } = req.body;
-
-  setInitialBalance(sender);
-  setInitialBalance(recipient);
-
-  if (balances[sender] < amount) {
-    res.status(400).send({ message: "Not enough funds!" });
-  } else {
-    balances[sender] -= amount;
-    balances[recipient] += amount;
-    res.send({ balance: balances[sender] });
+function verifyMessage(message, messageHash) {
+  if (sha256(utf8ToBytes(message)) == messageHash) {
+    return true;
   }
+  return false;
+}
+
+function verifySigner(signature, messageHash, publicKey) {
+  const isSigned = secp.secp256k1.verify(signature, messageHash, publicKey);
+  if (
+    isSigned &&
+    publicKey == signature.recoverPublicKey(toHex(messageHash)).toHex()
+  ) {
+    return true;
+  }
+  return false;
+}
+
+app.post("/send", (req, res) => {
+  const { message, messageHash, signature } = req.body;
+  console.log("message: " + message + "\nmessageHash: " + messageHash + "\nsignature: " + signature);
+
+  //if (verifyMessage(messsage, messageHash)) {
+    const { sender, senderPublicKey, recipient, amount } = JSON.parse(message);
+    // if (verifySigner(signature, messageHash, senderPublicKey)) {
+      setInitialBalance(sender);
+      setInitialBalance(recipient);
+
+      console.log("Sending...");
+      console.log("Sender: " + sender);
+      console.log("Recipient: " + recipient);
+
+      if (balances[sender] < amount) {
+        res.status(400).send({ message: "Not enough funds!" });
+      } else {
+        balances[sender] -= amount;
+        balances[recipient] += amount;
+        res.send({ balance: balances[sender] });
+      }
+    // } else {
+    //   res.status(400).send({ message: "Sender Verification failed!" });
+    // }
+  //} else {
+  //   res.status(400).send({ message: "Message Verification failed!" });
+  // }
 });
 
 app.listen(port, () => {

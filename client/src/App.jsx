@@ -1,6 +1,5 @@
 import Wallet from "./Wallet";
 import Transfer from "./Transfer";
-import Converter from "./Converter";
 import "./App.scss";
 import { useState } from "react";
 
@@ -12,12 +11,6 @@ function App() {
 
   return (
     <div className="app">
-      <Converter
-        setAddress={setWalletAddress}
-        address={walletAddress}
-        privateKey={privateKey}
-        setPrivateKey={setPrivateKey}
-      />
       <Wallet
         balance={balance}
         setBalance={setBalance}
